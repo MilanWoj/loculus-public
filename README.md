@@ -1,98 +1,85 @@
 # Loculus
 
-Moteur de recherche IA 100% local pour macOS (Apple Silicon). Combine recherche web (SearXNG) et RAG sur vos documents personnels (Qdrant), synthétisés par un LLM local (llama.cpp) avec citations des sources — dans l'esprit de Perplexity, sans jamais quitter votre machine.
+100% local AI search engine for macOS (Apple Silicon). It combines web search (SearXNG) and RAG over your personal documents (Qdrant), synthesized by a local LLM (llama.cpp) with cited sources, and nothing ever leaves your machine.
 
-Empreinte RAM cible : < 8-10 Go. Tout s'arrête automatiquement (LLM, conteneurs Docker, serveurs) dès que vous fermez la fenêtre de l'application.
+Target RAM footprint: < 8-10 GB. Everything (LLM, Docker containers, servers) stops automatically as soon as you close the application window.
 
-## Prérequis
+## Requirements
 
-- macOS Apple Silicon
-- [Homebrew](https://brew.sh)
-- Docker Desktop
+- macOS on Apple Silicon
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (must be running)
 - Git
-- Xcode Command Line Tools : `xcode-select --install`
+
+```bash
+brew install cmake openssl@3
+```
 
 ## Installation
 
 ```bash
-git clone https://github.com/MilanWoj/loculus.git
+git clone --recurse-submodules https://github.com/MilanWoj/loculus-public.git loculus
 cd loculus
 
-brew install cmake openssl@3 node uv
-
-git clone https://github.com/ggml-org/llama.cpp
-cd llama.cpp
+# Build llama.cpp (Metal acceleration)
+cd infra/llama.cpp
 cmake -B build -DGGML_METAL=ON -DLLAMA_OPENSSL=ON -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)
 cmake --build build --config Release -j
-sudo cp build/bin/llama-server /opt/homebrew/bin/
-cd ..
+sudo ln -sf "$(pwd)/build/bin/llama-server" /opt/homebrew/bin/llama-server
+cd ../..
 
+# Configure SearXNG
 cp infra/docker/searxng/settings.yml.example infra/docker/searxng/settings.yml
-# Puis remplacez secret_key par une valeur générée avec : openssl rand -hex 32
-
-cd backend && uv sync && cd ..
-cd frontend && npm install && cd ..
+# Then replace secret_key with a value generated with: openssl rand -hex 32
 ```
 
-## Lancement (mode développement)
+The backend and the frontend require no installation on your machine: Docker builds them on first launch.
+
+## Usage
 
 ```bash
-./scripts/start.sh
+./scripts/start-prod.sh   # start the whole stack
+./scripts/status.sh       # check the state of the services
+./scripts/stop.sh         # stop everything
 ```
 
-Ouvre le frontend sur `http://127.0.0.1:5173` avec hot reload.
+## macOS app
 
-## Lancement (mode production, conteneurisé)
-
-```bash
-./scripts/start-prod.sh
-```
-
-Sert l'application complète sur `http://127.0.0.1:8000`.
-
-## Ingestion de documents
-
-```bash
-cd backend
-uv run python -m app.rag.ingest /chemin/vers/vos/documents
-```
-
-## Arrêt
-
-```bash
-./scripts/stop.sh
-```
-
-## Application macOS
-
-Pour empaqueter Loculus en `.app` (démarrage/arrêt automatique à l'ouverture/fermeture de la fenêtre) :
+To package Loculus as a `.app` (starts and stops automatically when the window is opened or closed):
 
 ```bash
 ./macos/build_app.sh
 open build-macos/Loculus.app
 ```
 
-Puis, si besoin, déplacez `Loculus.app` dans `/Applications`.
+Then move `Loculus.app` to `/Applications` if you like.
+
+## Document ingestion
+
+Put your files (PDF, DOCX, TXT, MD) in the `documents/` folder, then, with the stack running:
+
+```bash
+docker compose -f infra/docker/docker-compose.yml exec backend python -m app.rag.ingest /app/documents
+```
 
 ## Scripts
 
-| Script | Rôle |
+| Script | Purpose |
 |---|---|
-| `scripts/start.sh` | Démarre la stack en mode développement |
-| `scripts/start-prod.sh` | Démarre la stack en mode production (conteneurs) |
-| `scripts/stop.sh` | Arrête tous les processus et conteneurs |
-| `scripts/status.sh` | Affiche l'état des services et la consommation RAM |
-| `scripts/rebuild.sh` | Reconstruit l'image Docker du backend |
-| `macos/build_app.sh` | Compile l'application macOS native |
+| `scripts/start.sh` | Starts the stack in development mode |
+| `scripts/start-prod.sh` | Starts the stack in production mode (containers) |
+| `scripts/stop.sh` | Stops all processes and containers |
+| `scripts/status.sh` | Shows the state of the services and RAM usage |
+| `scripts/rebuild.sh` | Rebuilds the backend Docker image |
+| `macos/build_app.sh` | Builds the native macOS application |
 
 ## Architecture
 
-- `backend/` — API FastAPI (orchestration RAG + recherche web + streaming SSE)
-- `frontend/` — interface React + Vite + Tailwind
-- `infra/docker/` — Qdrant, SearXNG, image du backend
-- `macos/` — application native Swift/Cocoa/WKWebView
-- `scripts/` — cycle de vie de la stack (démarrage, arrêt, métriques)
+- `backend/`: FastAPI API (RAG orchestration + web search + SSE streaming)
+- `frontend/`: React + Vite + Tailwind interface
+- `infra/docker/`: Qdrant, SearXNG, backend image
+- `macos/`: native Swift/Cocoa/WKWebView application
+- `scripts/`: stack lifecycle (start, stop, metrics)
 
-## Licence
+## License
 
-MIT — voir [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
