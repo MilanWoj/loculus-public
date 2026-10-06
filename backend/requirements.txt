@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sse-starlette
+python-multipart
+qdrant-client
+httpx
+pypdf
+python-docx
+tqdm

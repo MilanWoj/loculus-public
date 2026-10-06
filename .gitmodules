@@ -1,0 +1,4 @@
+[submodule "infra/llama.cpp"]
+	path = infra/llama.cpp
+	url = https://github.com/ggml-org/llama.cpp.git
+	ignore = untracked

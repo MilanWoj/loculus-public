@@ -1,0 +1,31 @@
+/* Author: MilanWoj */
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0b0c0e;
+  --color-surface: #14161a;
+  --color-surface-raised: #1b1e23;
+  --color-border: #26292f;
+  --color-text: #e8e9eb;
+  --color-text-muted: #8b8f97;
+  --color-accent: #4f8cff;
+  --color-accent-warm: #d9a441;
+  --color-status-up: #3ecf7a;
+  --color-status-down: #e5484d;
+  --font-display: "Inter", system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-display);
+}
+
+.status-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
